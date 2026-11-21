@@ -1,0 +1,35 @@
+# render.yaml — Render Infrastructure-as-Code
+# Docs: https://render.com/docs/infrastructure-as-code
+
+services:
+  - type: web
+    name: quant-x-engine
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon          # Render free tier region
+    branch: main
+
+    # Environment variables (can also be set in Render Dashboard)
+    envVars:
+      - key: USE_SQLITE
+        value: "true"
+      - key: SQLITE_PATH
+        value: /app/data/quantx.db
+      - key: PARQUET_DATA_DIR
+        value: /app/datasets
+      - key: REPORTS_DIR
+        value: /app/reports
+      - key: LOG_DIR
+        value: /app/logs
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: LOG_LEVEL
+        value: INFO
+
+    # Health check path
+    healthCheckPath: /health
+
+    # Auto-deploy on every push to main
+    autoDeploy: true
+
