@@ -69,6 +69,7 @@ def create_app() -> FastAPI:
         }
 
     static_index = Path(__file__).parent / "static" / "index.html"
+    apk_file = Path(__file__).parent / "static" / "quant-x.apk"
 
     @app.get("/", tags=["Terminal Web App"])
     @app.get("/app", tags=["Terminal Web App"])
@@ -76,6 +77,17 @@ def create_app() -> FastAPI:
         if static_index.exists():
             return FileResponse(static_index)
         return {"status": "QUANT-X Backend Active", "docs": "/docs"}
+
+    @app.get("/download", tags=["Mobile APK"])
+    @app.get("/quant-x.apk", tags=["Mobile APK"])
+    async def download_apk():
+        if apk_file.exists():
+            return FileResponse(
+                apk_file,
+                media_type="application/vnd.android.package-archive",
+                filename="quant-x.apk"
+            )
+        return {"error": "APK not found"}
 
     return app
 
