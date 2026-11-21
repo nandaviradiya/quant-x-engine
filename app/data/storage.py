@@ -26,9 +26,17 @@ def get_market_type(symbol: str) -> str:
 
 def get_parquet_path(data_dir: str, symbol: str, timeframe: str) -> Path:
     market = get_market_type(symbol)
-    base = Path(data_dir) / market / symbol.upper()
-    base.mkdir(parents=True, exist_ok=True)
-    return base / f"{timeframe.upper()}.parquet"
+    d = Path(data_dir)
+    p1 = d / market / symbol.upper() / f"{timeframe.upper()}.parquet"
+    if p1.exists():
+        return p1
+    p2 = d / symbol.upper() / timeframe.upper() / "data.parquet"
+    if p2.exists():
+        return p2
+    p3 = d / symbol.upper() / f"{timeframe.upper()}.parquet"
+    if p3.exists():
+        return p3
+    return p1
 
 
 def save_ohlcv(data_dir: str, symbol: str, timeframe: str, df: pd.DataFrame) -> str:
@@ -68,6 +76,7 @@ def save_ohlcv(data_dir: str, symbol: str, timeframe: str, df: pd.DataFrame) -> 
     clean_df = clean_df.drop_duplicates(subset=["timestamp"]).sort_values("timestamp").reset_index(drop=True)
 
     target_path = get_parquet_path(data_dir, symbol, timeframe)
+    target_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         clean_df.to_parquet(target_path, engine="pyarrow", compression="snappy", index=False)
         logger.info(f"Saved {len(clean_df)} bars to {target_path}")

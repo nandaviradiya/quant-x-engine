@@ -111,5 +111,25 @@ class DataService:
             gaps_detail=res.gaps_detail
         )
 
+    def get_candles(self, symbol: str, timeframe: str, limit: int = 300) -> List[Dict[str, Any]]:
+        df = load_ohlcv(self.settings.PARQUET_DATA_DIR, symbol, timeframe)
+        if df.empty:
+            return []
+        if limit and len(df) > limit:
+            df = df.tail(limit)
+        bars = []
+        for _, row in df.iterrows():
+            ts_val = row["timestamp"]
+            ts = int(ts_val.timestamp()) if hasattr(ts_val, "timestamp") else int(pd.to_datetime(ts_val).timestamp())
+            bars.append({
+                "time": ts,
+                "open": float(row["open"]),
+                "high": float(row["high"]),
+                "low": float(row["low"]),
+                "close": float(row["close"]),
+                "volume": float(row.get("volume", 0)),
+            })
+        return bars
+
 
 data_service = DataService()

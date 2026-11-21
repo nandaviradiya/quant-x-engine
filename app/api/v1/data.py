@@ -62,3 +62,8 @@ async def data_availability():
 @router.get("/quality/{symbol}/{timeframe}", response_model=DataQualityReport)
 async def quality_report(symbol: str, timeframe: str):
     return data_service.get_quality_report(symbol.upper(), timeframe.upper())
+
+
+@router.get("/candles/{symbol}/{timeframe}")
+async def get_candles(symbol: str, timeframe: str, limit: int = 300):
+    return data_service.get_candles(symbol.upper(), timeframe.upper(), limit)

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from app.config import get_settings
 from app.api.v1 import data, strategies, backtest, optimization, analytics, risk
@@ -66,6 +67,15 @@ def create_app() -> FastAPI:
             "data_dir": settings.PARQUET_DATA_DIR,
             "database_connected": True
         }
+
+    static_index = Path(__file__).parent / "static" / "index.html"
+
+    @app.get("/", tags=["Terminal Web App"])
+    @app.get("/app", tags=["Terminal Web App"])
+    async def serve_mobile_app():
+        if static_index.exists():
+            return FileResponse(static_index)
+        return {"status": "QUANT-X Backend Active", "docs": "/docs"}
 
     return app
 

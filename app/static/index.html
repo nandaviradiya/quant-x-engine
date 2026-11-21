@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>QUANT-X Terminal Mobile</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="QUANT-X">
+  <meta name="theme-color" content="#0a0e17">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Chart libraries -->
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0a0e17;
+      --card: #111827;
+      --card-hover: #162032;
+      --border: #1f293d;
+      --primary: #00f0ff;
+      --primary-dim: rgba(0, 240, 255, 0.15);
+      --green: #10b981;
+      --green-dim: rgba(16, 185, 129, 0.15);
+      --red: #ef4444;
+      --red-dim: rgba(239, 68, 68, 0.15);
+      --text: #f3f4f6;
+      --text-muted: #94a3b8;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      padding-bottom: 74px; /* bottom nav clearance */
+    }
+    /* Header */
+    header {
+      background: rgba(10, 14, 23, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .brand .logo-badge {
+      background: linear-gradient(135deg, #00f0ff, #3b82f6);
+      color: #000;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      background: var(--green-dim);
+      color: var(--green);
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      background-color: var(--green);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    /* Content Views */
+    main { flex: 1; padding: 12px; max-width: 680px; width: 100%; margin: 0 auto; }
+    .view { display: none; }
+    .view.active { display: block; animation: fadeIn 0.15s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Asset selector pills */
+    .pill-group {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .pill-group::-webkit-scrollbar { display: none; }
+    .pill {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .pill.active {
+      background: var(--primary-dim);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .tf-group { display: flex; gap: 4px; }
+    .tf-btn {
+      padding: 4px 10px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      border-radius: 6px;
+      background: #1f293d;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .tf-btn.active {
+      background: var(--primary);
+      color: #000;
+      font-weight: 700;
+    }
+
+    /* Price Bar */
+    .price-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin: 10px 0;
+    }
+    .current-price {
+      font-family: var(--font-mono);
+      font-size: 26px;
+      font-weight: 700;
+    }
+    .price-change {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .price-change.pos { color: var(--green); background: var(--green-dim); }
+    .price-change.neg { color: var(--red); background: var(--red-dim); }
+
+    /* Chart Container */
+    #chart-container {
+      width: 100%;
+      height: 320px;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    /* Form Inputs */
+    .form-group { margin-bottom: 12px; }
+    .form-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      display: block;
+      font-weight: 500;
+    }
+    .form-control, select.form-control {
+      width: 100%;
+      background: #0f1623;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      outline: none;
+    }
+    .form-control:focus { border-color: var(--primary); }
+
+    /* Action Buttons */
+    .btn-action {
+      width: 100%;
+      background: linear-gradient(135deg, #00f0ff, #0284c7);
+      color: #000;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 14px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(0, 240, 255, 0.25);
+    }
+    .btn-action:active { transform: scale(0.98); }
+    .btn-action:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .metric-box {
+      background: #0d1421;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .metric-name { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+    .metric-val { font-family: var(--font-mono); font-size: 18px; font-weight: 700; margin-top: 2px; }
+    .metric-val.green { color: var(--green); }
+    .metric-val.red { color: var(--red); }
+    .metric-val.cyan { color: var(--primary); }
+
+    /* Strategy Cards */
+    .strategy-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .strategy-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .strat-code {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary);
+      background: var(--primary-dim);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .strat-title { font-size: 15px; font-weight: 600; color: var(--text); }
+    .strat-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; margin: 6px 0; }
+    .strat-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    .strat-tag { font-size: 10px; background: #1e293b; color: #cbd5e1; padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); }
+
+    /* Bottom Navigation */
+    nav.bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(10, 14, 23, 0.98);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 4px 14px;
+      z-index: 100;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      color: var(--text-muted);
+      font-size: 10px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      width: 20%;
+      padding: 4px 0;
+      border-radius: 6px;
+    }
+    .nav-item svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .nav-item.active { color: var(--primary); }
+
+    /* Progress bar */
+    .progress-bar-container {
+      width: 100%;
+      background: #1f293d;
+      border-radius: 6px;
+      height: 6px;
+      overflow: hidden;
+      margin: 12px 0;
+      display: none;
+    }
+    .progress-bar {
+      height: 100%;
+      background: var(--primary);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="brand">
+      <span class="logo-badge">X</span>
+      <span>QUANT-X</span>
+    </div>
+    <div class="status-pill" id="status-pill">
+      <div class="pulse-dot"></div>
+      <span id="engine-status-text">ONLINE</span>
+    </div>
+  </header>
+
+  <!-- Main Views -->
+  <main>
+
+    <!-- VIEW 1: MARKET CHART -->
+    <section id="view-chart" class="view active">
+      <div class="pill-group" id="instrument-pills">
+        <div class="pill active" onclick="switchSymbol('BTCUSD')">BTCUSD</div>
+        <div class="pill" onclick="switchSymbol('ETHUSD')">ETHUSD</div>
+        <div class="pill" onclick="switchSymbol('SOLUSD')">SOLUSD</div>
+        <div class="pill" onclick="switchSymbol('XAUUSD')">XAUUSD (Gold)</div>
+        <div class="pill" onclick="switchSymbol('XAGUSD')">XAGUSD (Silver)</div>
+      </div>
+
+      <div class="card" style="margin-top: 10px;">
+        <div class="card-title">
+          <span id="chart-title">BTCUSD · Crypto</span>
+          <div class="tf-group">
+            <button class="tf-btn" onclick="switchTimeframe('M15')">M15</button>
+            <button class="tf-btn active" onclick="switchTimeframe('H1')">H1</button>
+          </div>
+        </div>
+
+        <div class="price-bar">
+          <div class="current-price" id="curr-price">Loading...</div>
+          <div class="price-change pos" id="price-change">+0.00%</div>
+        </div>
+
+        <div id="chart-container"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Market Details</div>
+        <div class="metrics-grid" style="grid-template-columns: repeat(3, 1fr);">
+          <div class="metric-box">
+            <div class="metric-name">Spread</div>
+            <div class="metric-val cyan" id="m-spread">--</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-name">24/7 Trading</div>
+            <div class="metric-val" id="m-session" style="font-size:14px; padding-top:4px;">YES</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-name">Historical Bars</div>
+            <div class="metric-val" id="m-bars">--</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: BACKTEST -->
+    <section id="view-backtest" class="view">
+      <div class="card">
+        <div class="card-title">Algorithm Backtester</div>
+        <div class="form-group">
+          <label class="form-label">Strategy</label>
+          <select class="form-control" id="bt-strategy">
+            <option value="S6_LIQUIDITY_SWEEP">S6: Universal Liquidity Sweep (All 5 Assets)</option>
+            <option value="S1_EMA_PULLBACK">S1: EMA Trend Pullback (BTC/ETH)</option>
+            <option value="S2_MSS">S2: Market Structure Shift (ETH/BTC)</option>
+            <option value="S3_VOL_BREAKOUT">S3: Volatility Breakout (SOL)</option>
+            <option value="S4_GOLD_EMA_VWAP">S4: Gold EMA + VWAP Retest (XAU)</option>
+            <option value="S5_SILVER_RANGE">S5: Silver Range Breakout (XAG)</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label">Asset</label>
+            <select class="form-control" id="bt-symbol">
+              <option value="BTCUSD">BTCUSD</option>
+              <option value="ETHUSD">ETHUSD</option>
+              <option value="SOLUSD">SOLUSD</option>
+              <option value="XAUUSD">XAUUSD (Gold)</option>
+              <option value="XAGUSD">XAGUSD (Silver)</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label">Timeframe</label>
+            <select class="form-control" id="bt-tf">
+              <option value="H1">H1 (1 Hour)</option>
+              <option value="M15">M15 (15 Min)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label">Capital ($)</label>
+            <input type="number" class="form-control" id="bt-capital" value="10000">
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label">Risk % per Trade</label>
+            <input type="number" class="form-control" id="bt-risk" value="1.0" step="0.1">
+          </div>
+        </div>
+
+        <button class="btn-action" id="btn-run-bt" onclick="executeBacktest()">
+          <span>⚡</span> RUN BACKTEST
+        </button>
+
+        <div class="progress-bar-container" id="bt-progress-cont">
+          <div class="progress-bar" id="bt-progress-bar"></div>
+        </div>
+      </div>
+
+      <!-- Backtest Results Card -->
+      <div class="card" id="bt-results-card" style="display: none;">
+        <div class="card-title">Backtest Results</div>
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <div class="metric-name">Net Return</div>
+            <div class="metric-val green" id="res-return">--</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-name">Sharpe Ratio</div>
+            <div class="metric-val cyan" id="res-sharpe">--</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-name">Win Rate</div>
+            <div class="metric-val" id="res-winrate">--</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-name">Profit Factor</div>
+            <div class="metric-val" id="res-pf">--</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-name">Max Drawdown</div>
+            <div class="metric-val red" id="res-dd">--</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-name">Total Trades</div>
+            <div class="metric-val" id="res-trades">--</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px;">
+          <div class="card-title">Equity Curve</div>
+          <canvas id="equity-chart" height="180"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: STRATEGIES -->
+    <section id="view-strategies" class="view">
+      <div class="card-title" style="margin-bottom: 12px;">Institutional Strategy Catalog (6)</div>
+
+      <div class="strategy-card">
+        <div class="strategy-header">
+          <div class="strat-title">Universal Liquidity Sweep</div>
+          <span class="strat-code">S6</span>
+        </div>
+        <div class="strat-desc">Institutional swing low/high purge detection with MSS/BOS displacement confirmation and zero look-ahead bias.</div>
+        <div class="strat-tags">
+          <span class="strat-tag">BTCUSD</span><span class="strat-tag">ETHUSD</span><span class="strat-tag">SOLUSD</span><span class="strat-tag">XAUUSD</span><span class="strat-tag">XAGUSD</span>
+        </div>
+      </div>
+
+      <div class="strategy-card">
+        <div class="strategy-header">
+          <div class="strat-title">EMA Trend Pullback</div>
+          <span class="strat-code">S1</span>
+        </div>
+        <div class="strat-desc">Triple EMA filter (20/50/200) with dynamic ATR stop loss and volume expansion confirmation.</div>
+        <div class="strat-tags"><span class="strat-tag">BTCUSD</span><span class="strat-tag">ETHUSD</span></div>
+      </div>
+
+      <div class="strategy-card">
+        <div class="strategy-header">
+          <div class="strat-title">Market Structure Shift (MSS)</div>
+          <span class="strat-code">S2</span>
+        </div>
+        <div class="strat-desc">Swing break of structure, order block retest, and trend-aligned displacement entries.</div>
+        <div class="strat-tags"><span class="strat-tag">ETHUSD</span><span class="strat-tag">BTCUSD</span></div>
+      </div>
+
+      <div class="strategy-card">
+        <div class="strategy-header">
+          <div class="strat-title">Volatility Breakout + Retest</div>
+          <span class="strat-code">S3</span>
+        </div>
+        <div class="strat-desc">Consolidation compression breakout detection calibrated specifically for Solana's high beta volatility.</div>
+        <div class="strat-tags"><span class="strat-tag">SOLUSD</span></div>
+      </div>
+
+      <div class="strategy-card">
+        <div class="strategy-header">
+          <div class="strat-title">Gold EMA + VWAP Pullback</div>
+          <span class="strat-code">S4</span>
+        </div>
+        <div class="strat-desc">Precious metal session VWAP trend following, London/NY session filters, 100 oz contract tick calculations.</div>
+        <div class="strat-tags"><span class="strat-tag">XAUUSD</span></div>
+      </div>
+
+      <div class="strategy-card">
+        <div class="strategy-header">
+          <div class="strat-title">Silver Range Breakout</div>
+          <span class="strat-code">S5</span>
+        </div>
+        <div class="strat-desc">Precious metal range breakout filter with spread-limit rejection guard (5000 oz contract).</div>
+        <div class="strat-tags"><span class="strat-tag">XAGUSD</span></div>
+      </div>
+    </section>
+
+    <!-- VIEW 4: RISK CALCULATOR -->
+    <section id="view-risk" class="view">
+      <div class="card">
+        <div class="card-title">Institutional Sizing Calculator</div>
+        
+        <div class="form-group">
+          <label class="form-label">Instrument</label>
+          <select class="form-control" id="risk-sym" onchange="updateRiskInputs()">
+            <option value="BTCUSD">BTCUSD (Crypto)</option>
+            <option value="ETHUSD">ETHUSD (Crypto)</option>
+            <option value="SOLUSD">SOLUSD (Crypto)</option>
+            <option value="XAUUSD">XAUUSD (Gold - 100 oz)</option>
+            <option value="XAGUSD">XAGUSD (Silver - 5000 oz)</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label">Account Equity ($)</label>
+            <input type="number" class="form-control" id="risk-equity" value="10000">
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label">Risk % per Trade</label>
+            <input type="number" class="form-control" id="risk-pct" value="1.0" step="0.25">
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label">Entry Price</label>
+            <input type="number" class="form-control" id="risk-entry" value="50000">
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label">Stop Loss Price</label>
+            <input type="number" class="form-control" id="risk-sl" value="49500">
+          </div>
+        </div>
+
+        <button class="btn-action" onclick="calcRisk()">
+          <span>📐</span> CALCULATE POSITION SIZE
+        </button>
+      </div>
+
+      <div class="card" id="risk-result-card" style="display: none;">
+        <div class="card-title">Order Execution Sizing</div>
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <div class="metric-name">Dollar Risk</div>
+            <div class="metric-val red" id="r-risk-amt">$100.00</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-name">Calculated Lots</div>
+            <div class="metric-val cyan" id="r-lots">0.20</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-name">Contract Units</div>
+            <div class="metric-val" id="r-units">0.20 BTC</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-name">Notional Value</div>
+            <div class="metric-val" id="r-notional">$10,000</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 5: SYSTEM -->
+    <section id="view-system" class="view">
+      <div class="card">
+        <div class="card-title">Server Architecture</div>
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <div class="metric-name">Status</div>
+            <div class="metric-val green">HEALTHY</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-name">Ping Latency</div>
+            <div class="metric-val cyan" id="sys-ping">-- ms</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-name">Storage Engine</div>
+            <div class="metric-val" style="font-size:14px; padding-top:4px;">Parquet (Snappy)</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-name">Database</div>
+            <div class="metric-val" style="font-size:14px; padding-top:4px;">SQLite (Async)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Cloud Infrastructure</div>
+        <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
+          <p>• <b>Host:</b> Render.com Docker Cloud</p>
+          <p>• <b>Heartbeat:</b> UptimeRobot 5m Ping (Always Awake 24/7)</p>
+          <p>• <b>API Version:</b> v1</p>
+          <p>• <b>Interactive OpenAPI Docs:</b> <a href="/docs" target="_blank" style="color:var(--primary); text-decoration:none;">/docs</a></p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Navigation Bar -->
+  <nav class="bottom-bar">
+    <div class="nav-item active" onclick="switchNav('chart')">
+      <svg viewBox="0 0 24 24"><path d="M3 3v18h18M7 14l4-4 4 4 5-6"/></svg>
+      <span>Market</span>
+    </div>
+    <div class="nav-item" onclick="switchNav('backtest')">
+      <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      <span>Backtest</span>
+    </div>
+    <div class="nav-item" onclick="switchNav('strategies')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+      <span>Strategies</span>
+    </div>
+    <div class="nav-item" onclick="switchNav('risk')">
+      <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      <span>Risk Calc</span>
+    </div>
+    <div class="nav-item" onclick="switchNav('system')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Status</span>
+    </div>
+  </nav>
+
+  <script>
+    // State
+    let currentSymbol = 'BTCUSD';
+    let currentTimeframe = 'H1';
+    let chartInstance = null;
+    let candleSeries = null;
+    let equityChartInstance = null;
+
+    // Navigation Switcher
+    function switchNav(viewName) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      
+      const targetView = document.getElementById(`view-${viewName}`);
+      if (targetView) targetView.classList.add('active');
+
+      const clickedNav = Array.from(document.querySelectorAll('.nav-item')).find(el => el.innerText.toLowerCase().includes(viewName === 'chart' ? 'market' : viewName.slice(0, 4)));
+      if (clickedNav) clickedNav.classList.add('active');
+
+      if (viewName === 'chart') {
+        setTimeout(() => resizeChart(), 100);
+      }
+    }
+
+    // Chart Setup with TradingView Lightweight Charts
+    function initChart() {
+      const container = document.getElementById('chart-container');
+      container.innerHTML = '';
+      
+      chartInstance = LightweightCharts.createChart(container, {
+        width: container.clientWidth,
+        height: 320,
+        layout: {
+          background: { color: '#0d1421' },
+          textColor: '#94a3b8',
+          fontSize: 11,
+          fontFamily: "'JetBrains Mono', monospace",
+        },
+        grid: {
+          vertLines: { color: 'rgba(31, 41, 61, 0.5)' },
+          horzLines: { color: 'rgba(31, 41, 61, 0.5)' },
+        },
+        timeScale: {
+          borderColor: '#1f293d',
+          timeVisible: true,
+          secondsVisible: false,
+        },
+        rightPriceScale: {
+          borderColor: '#1f293d',
+        },
+      });
+
+      candleSeries = chartInstance.addCandlestickSeries({
+        upColor: '#10b981',
+        downColor: '#ef4444',
+        borderVisible: false,
+        wickUpColor: '#10b981',
+        wickDownColor: '#ef4444',
+      });
+
+      window.addEventListener('resize', resizeChart);
+      loadCandles();
+    }
+
+    function resizeChart() {
+      const container = document.getElementById('chart-container');
+      if (chartInstance && container) {
+        chartInstance.applyOptions({ width: container.clientWidth });
+      }
+    }
+
+    async function switchSymbol(sym) {
+      currentSymbol = sym;
+      document.querySelectorAll('#instrument-pills .pill').forEach(p => {
+        p.classList.toggle('active', p.innerText.includes(sym));
+      });
+      document.getElementById('chart-title').innerText = `${sym} · ${sym.startsWith('X') ? 'Precious Metals' : 'Crypto'}`;
+      document.getElementById('m-session').innerText = sym.startsWith('X') ? 'Session Closures' : '24/7 YES';
+      loadCandles();
+    }
+
+    function switchTimeframe(tf) {
+      currentTimeframe = tf;
+      document.querySelectorAll('.tf-btn').forEach(b => {
+        b.classList.toggle('active', b.innerText === tf);
+      });
+      loadCandles();
+    }
+
+    async function loadCandles() {
+      try {
+        const res = await fetch(`/api/v1/data/candles/${currentSymbol}/${currentTimeframe}?limit=150`);
+        const candles = await res.json();
+        if (candles && candles.length > 0) {
+          candleSeries.setData(candles);
+          chartInstance.timeScale().fitContent();
+
+          const last = candles[candles.length - 1];
+          const first = candles[0];
+          const chg = ((last.close - first.open) / first.open) * 100;
+          
+          document.getElementById('curr-price').innerText = last.close.toLocaleString(undefined, {minimumFractionDigits: 2});
+          const chgEl = document.getElementById('price-change');
+          chgEl.innerText = `${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%`;
+          chgEl.className = `price-change ${chg >= 0 ? 'pos' : 'neg'}`;
+          
+          document.getElementById('m-spread').innerText = currentSymbol === 'BTCUSD' ? '$1.00' : currentSymbol === 'ETHUSD' ? '$0.20' : currentSymbol === 'SOLUSD' ? '$0.05' : '$0.30';
+          document.getElementById('m-bars').innerText = candles.length;
+        }
+      } catch (err) {
+        console.error('Error fetching candles:', err);
+      }
+    }
+
+    // Execute Backtest
+    async function executeBacktest() {
+      const btn = document.getElementById('btn-run-bt');
+      const progressCont = document.getElementById('bt-progress-cont');
+      const progressBar = document.getElementById('bt-progress-bar');
+      const resultsCard = document.getElementById('bt-results-card');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span> SIMULATING...';
+      progressCont.style.display = 'block';
+      progressBar.style.width = '30%';
+
+      const payload = {
+        strategy_id: document.getElementById('bt-strategy').value,
+        symbol: document.getElementById('bt-symbol').value,
+        timeframe: document.getElementById('bt-tf').value,
+        initial_capital: parseFloat(document.getElementById('bt-capital').value),
+        risk_per_trade_pct: parseFloat(document.getElementById('bt-risk').value),
+        slippage_points: 1.0,
+        commission_per_lot: 2.0
+      };
+
+      try {
+        progressBar.style.width = '65%';
+        const res = await fetch('/api/v1/backtest/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        progressBar.style.width = '100%';
+
+        // Render Results
+        const m = data.metrics || {};
+        document.getElementById('res-return').innerText = `${m.total_return_pct >= 0 ? '+' : ''}${m.total_return_pct?.toFixed(2) || '0.00'}%`;
+        document.getElementById('res-sharpe').innerText = m.sharpe_ratio?.toFixed(2) || '0.00';
+        document.getElementById('res-winrate').innerText = `${m.win_rate_pct?.toFixed(1) || '0.0'}%`;
+        document.getElementById('res-pf').innerText = m.profit_factor?.toFixed(2) || '0.00';
+        document.getElementById('res-dd').innerText = `-${m.max_drawdown_pct?.toFixed(2) || '0.00'}%`;
+        document.getElementById('res-trades').innerText = m.total_trades || '0';
+
+        // Render Equity Chart
+        renderEquityChart(data.equity_curve || []);
+
+        resultsCard.style.display = 'block';
+        resultsCard.scrollIntoView({ behavior: 'smooth' });
+      } catch (err) {
+        alert('Backtest failed: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>⚡</span> RUN BACKTEST';
+        setTimeout(() => { progressCont.style.display = 'none'; }, 800);
+      }
+    }
+
+    function renderEquityChart(curve) {
+      const ctx = document.getElementById('equity-chart').getContext('2d');
+      if (equityChartInstance) equityChartInstance.destroy();
+
+      const labels = curve.map((_, i) => i);
+      const values = curve.map(p => p.equity || p);
+
+      equityChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Equity ($)',
+            data: values,
+            borderColor: '#00f0ff',
+            backgroundColor: 'rgba(0, 240, 255, 0.08)',
+            fill: true,
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { display: false },
+            y: {
+              grid: { color: 'rgba(31, 41, 61, 0.5)' },
+              ticks: { color: '#94a3b8', font: { family: "'JetBrains Mono'" } }
+            }
+          }
+        }
+      });
+    }
+
+    // Risk Calculator
+    function updateRiskInputs() {
+      const sym = document.getElementById('risk-sym').value;
+      if (sym === 'BTCUSD') {
+        document.getElementById('risk-entry').value = '50000';
+        document.getElementById('risk-sl').value = '49500';
+      } else if (sym === 'ETHUSD') {
+        document.getElementById('risk-entry').value = '3000';
+        document.getElementById('risk-sl').value = '2950';
+      } else if (sym === 'SOLUSD') {
+        document.getElementById('risk-entry').value = '140';
+        document.getElementById('risk-sl').value = '136';
+      } else if (sym === 'XAUUSD') {
+        document.getElementById('risk-entry').value = '2050';
+        document.getElementById('risk-sl').value = '2042';
+      } else if (sym === 'XAGUSD') {
+        document.getElementById('risk-entry').value = '25.50';
+        document.getElementById('risk-sl').value = '25.20';
+      }
+    }
+
+    function calcRisk() {
+      const sym = document.getElementById('risk-sym').value;
+      const equity = parseFloat(document.getElementById('risk-equity').value) || 10000;
+      const riskPct = parseFloat(document.getElementById('risk-pct').value) || 1.0;
+      const entry = parseFloat(document.getElementById('risk-entry').value);
+      const sl = parseFloat(document.getElementById('risk-sl').value);
+
+      const riskDollar = equity * (riskPct / 100.0);
+      const slDist = Math.abs(entry - sl);
+
+      let lots = 0;
+      let units = '';
+
+      if (sym === 'XAUUSD') {
+        // 100 oz contract. 1 pt = $100.
+        lots = riskDollar / (slDist * 100);
+        units = `${(lots * 100).toFixed(1)} oz`;
+      } else if (sym === 'XAGUSD') {
+        // 5000 oz contract
+        lots = riskDollar / (slDist * 5000);
+        units = `${(lots * 5000).toFixed(0)} oz`;
+      } else {
+        // Crypto 1 unit = 1 coin
+        lots = riskDollar / slDist;
+        units = `${lots.toFixed(3)} ${sym.replace('USD', '')}`;
+      }
+
+      document.getElementById('r-risk-amt').innerText = `$${riskDollar.toFixed(2)}`;
+      document.getElementById('r-lots').innerText = lots.toFixed(2);
+      document.getElementById('r-units').innerText = units;
+      document.getElementById('r-notional').innerText = `$${(lots * entry).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+      document.getElementById('risk-result-card').style.display = 'block';
+    }
+
+    // Ping check
+    async function checkPing() {
+      const t0 = performance.now();
+      try {
+        await fetch('/health');
+        const lat = Math.round(performance.now() - t0);
+        document.getElementById('sys-ping').innerText = `${lat} ms`;
+      } catch (e) {}
+    }
+
+    window.onload = () => {
+      initChart();
+      checkPing();
+      setInterval(checkPing, 30000);
+    };
+  </script>
+</body>
+</html>
