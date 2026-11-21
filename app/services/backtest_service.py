@@ -5,7 +5,7 @@ import logging
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import pandas as pd
 from app.config import get_settings
 from app.models.domain import BacktestConfig, Direction, Timeframe, RiskConfig, ExecutionConfig
