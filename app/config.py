@@ -1,7 +1,7 @@
 """QUANT-X Engine Configuration."""
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union, List, Any
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator
 
@@ -37,7 +37,7 @@ class Settings(BaseSettings):
 
     # API
     API_VERSION: str = "v1"
-    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:8080", "*"]
+    CORS_ORIGINS: Union[str, list[str]] = ["*"]
 
     # Logging
     LOG_LEVEL: str = "INFO"
@@ -51,12 +51,20 @@ class Settings(BaseSettings):
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
 
-    @field_validator("CORS_ORIGINS", mode="before")
+    @field_validator("CORS_ORIGINS")
     @classmethod
-    def parse_cors(cls, v):
+    def assemble_cors_origins(cls, v: Union[str, list[str]]) -> list[str]:
         if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",")]
-        return v
+            if v.startswith("[") and v.endswith("]"):
+                import json
+                try:
+                    return json.loads(v)
+                except Exception:
+                    pass
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        elif isinstance(v, (list, tuple)):
+            return list(v)
+        return ["*"]
 
 
 @lru_cache()
