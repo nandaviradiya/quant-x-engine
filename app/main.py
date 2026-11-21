@@ -6,7 +6,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import HTMLResponse, FileResponse
 
 from app.config import get_settings
 from app.api.v1 import data, strategies, backtest, optimization, analytics, risk
@@ -71,12 +71,12 @@ def create_app() -> FastAPI:
     static_index = Path(__file__).parent / "static" / "index.html"
     apk_file = Path(__file__).parent / "static" / "quant-x.apk"
 
-    @app.get("/", tags=["Terminal Web App"])
-    @app.get("/app", tags=["Terminal Web App"])
+    @app.get("/", response_class=HTMLResponse, tags=["Terminal Web App"])
+    @app.get("/app", response_class=HTMLResponse, tags=["Terminal Web App"])
     async def serve_mobile_app():
         if static_index.exists():
-            return FileResponse(static_index)
-        return {"status": "QUANT-X Backend Active", "docs": "/docs"}
+            return HTMLResponse(content=static_index.read_text(encoding="utf-8"))
+        return HTMLResponse("<h2>QUANT-X Backend Active</h2><p><a href='/docs'>API Documentation</a></p>")
 
     @app.get("/download", tags=["Mobile APK"])
     @app.get("/quant-x.apk", tags=["Mobile APK"])
